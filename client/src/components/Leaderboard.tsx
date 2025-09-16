@@ -5,7 +5,7 @@ import { Trophy, Medal, Award } from 'lucide-react';
 export const Leaderboard: React.FC = () => {
   const { players, phase, playerId } = useGameState();
 
-  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+  const sortedPlayers = players ? [...players].sort((a, b) => b.score - a.score) : [];
 
   const getPositionIcon = (position: number) => {
     switch (position) {
@@ -30,7 +30,7 @@ export const Leaderboard: React.FC = () => {
       <div className="bg-white rounded-lg shadow-lg p-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">Players</h2>
         <div className="space-y-2">
-          {players.map((player, index) => (
+          {players && players.map((player, index) => (
             <div
               key={player.id}
               className={`flex items-center justify-between p-3 rounded-lg border ${

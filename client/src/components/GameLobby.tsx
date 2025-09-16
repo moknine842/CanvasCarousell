@@ -93,7 +93,7 @@ export const GameLobby: React.FC = () => {
   };
 
   const startGame = () => {
-    if (players.length < 2) {
+    if (!players || players.length < 2) {
       alert('Need at least 2 players to start');
       return;
     }
@@ -120,7 +120,7 @@ export const GameLobby: React.FC = () => {
     setIsHost(false);
   };
 
-  if (phase !== 'lobby' || players.length === 0) {
+  if (phase !== 'lobby' || !players || players.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
@@ -213,8 +213,8 @@ export const GameLobby: React.FC = () => {
     );
   }
 
-  const readyPlayers = players.filter(p => p.isReady).length;
-  const currentPlayer = players.find(p => p.id === playerId);
+  const readyPlayers = players ? players.filter(p => p.isReady).length : 0;
+  const currentPlayer = players ? players.find(p => p.id === playerId) : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 p-4">
@@ -233,12 +233,12 @@ export const GameLobby: React.FC = () => {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold text-gray-800 flex items-center">
                   <Users className="w-6 h-6 mr-2" />
-                  Players ({players.length}/8)
+                  Players ({players ? players.length : 0}/8)
                 </h2>
               </div>
 
               <div className="space-y-3">
-                {players.map((player) => (
+                {players && players.map((player) => (
                   <div
                     key={player.id}
                     className={`flex items-center justify-between p-3 rounded-lg border ${
@@ -280,11 +280,11 @@ export const GameLobby: React.FC = () => {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Players:</span>
-                    <span className="font-medium">{players.length}/8</span>
+                    <span className="font-medium">{players ? players.length : 0}/8</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Ready Players:</span>
-                    <span className="font-medium">{readyPlayers}/{players.length}</span>
+                    <span className="font-medium">{readyPlayers}/{players ? players.length : 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Rounds:</span>
@@ -310,7 +310,7 @@ export const GameLobby: React.FC = () => {
                 {isHost && (
                   <button
                     onClick={startGame}
-                    disabled={players.length < 2}
+                    disabled={!players || players.length < 2}
                     className="w-full bg-purple-500 text-white py-3 px-4 rounded-lg hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center justify-center"
                   >
                     <Play className="w-5 h-5 mr-2" />
