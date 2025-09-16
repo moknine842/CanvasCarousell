@@ -72,11 +72,18 @@ export const GameLobby: React.FC = () => {
       return;
     }
 
+    console.log('Creating game with name:', playerName, 'and settings:', { maxRounds });
     setIsCreating(true);
+    
+    // Ensure socket is connected before emitting
+    const socket = socketManager.connect();
+    console.log('Socket connected:', socket.connected);
+    
     socketManager.emit('createGame', { 
       playerName: playerName.trim(),
       settings: { maxRounds }
     });
+    console.log('Emitted createGame event');
   };
 
   const joinGame = () => {

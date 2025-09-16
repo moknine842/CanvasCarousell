@@ -40,8 +40,12 @@ class SocketManager {
   }
 
   emit(event: string, data?: any) {
+    console.log('Trying to emit:', event, 'with data:', data, 'socket connected:', this.socket?.connected);
     if (this.socket?.connected) {
       this.socket.emit(event, data);
+      console.log('Event emitted successfully');
+    } else {
+      console.log('Socket not connected, cannot emit');
     }
   }
 

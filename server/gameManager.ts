@@ -50,6 +50,7 @@ export class GameManager {
   }
 
   createGame(hostSocketId: string, playerName: string, settings: { maxRounds: number }): string {
+    console.log('Creating game for player:', playerName, 'with settings:', settings);
     const gameId = this.generateGameId();
     const playerId = this.generatePlayerId();
     const hostId = playerId;

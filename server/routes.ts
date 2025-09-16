@@ -21,10 +21,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('Player connected:', socket.id);
 
     socket.on('createGame', (data: { playerName: string; settings: { maxRounds: number } }) => {
+      console.log('Create game request:', data);
       try {
         const gameId = gameManager.createGame(socket.id, data.playerName, data.settings);
+        console.log('Game created:', gameId);
         socket.emit('gameCreated', { gameId, hostId: socket.id });
       } catch (error) {
+        console.log('Error creating game:', error);
         socket.emit('error', 'Failed to create game');
       }
     });
