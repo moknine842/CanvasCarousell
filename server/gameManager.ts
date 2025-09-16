@@ -384,7 +384,7 @@ export class GameManager {
   }
 
   private getPlayerIdBySocket(socketId: string): string | null {
-    for (const [playerId, gameId] of this.playerToGame) {
+    for (const [playerId, gameId] of Array.from(this.playerToGame.entries())) {
       const game = this.games.get(gameId);
       if (game) {
         const player = game.players.get(playerId);
