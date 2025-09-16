@@ -25,7 +25,13 @@ export const GameLobby: React.FC = () => {
   useEffect(() => {
     const socket = socketManager.connect();
 
+    // Connection confirmation
+    socket.on('connectionConfirmed', (data: { socketId: string }) => {
+      console.log('✅ Connection confirmed by server:', data.socketId);
+    });
+
     socket.on('playerJoined', (data: { playerId: string; players: any[] }) => {
+      console.log('👤 Player joined:', data);
       if (!playerId) {
         setPlayerId(data.playerId);
         setStorePlayerName(playerName);
@@ -34,11 +40,21 @@ export const GameLobby: React.FC = () => {
     });
 
     socket.on('gameCreated', (data: { gameId: string; hostId: string; players: any[] }) => {
-      setIsHost(data.hostId === playerId);
+      console.log('🎮 Game created response:', data);
+      setIsCreating(false);
+      
+      // Find the current player in the players array to get their ID
+      const currentPlayer = data.players?.[0]; // Host is first player
+      if (currentPlayer) {
+        setPlayerId(currentPlayer.id);
+        setStorePlayerName(currentPlayer.name);
+      }
+      
+      setIsHost(true); // Game creator is always host
       setGameState({ 
         id: data.gameId,
         hostId: data.hostId,
-        players: data.players,
+        players: data.players || [],
         phase: 'lobby'
       });
     });
@@ -52,17 +68,22 @@ export const GameLobby: React.FC = () => {
     });
 
     socket.on('error', (error: string) => {
-      alert(error);
+      console.error('🚨 Socket error:', error);
+      alert('Error: ' + error);
       setIsJoining(false);
       setIsCreating(false);
     });
 
+    // Cleanup function
+
     return () => {
+      socket.off('connectionConfirmed');
       socket.off('playerJoined');
       socket.off('gameCreated');
       socket.off('gameStarted');
       socket.off('playerLeft');
       socket.off('error');
+      // Cleanup handled by useEffect
     };
   }, [playerId, playerName, setPlayerId, setStorePlayerName, setIsHost, setGameState]);
 
@@ -72,18 +93,45 @@ export const GameLobby: React.FC = () => {
       return;
     }
 
-    console.log('Creating game with name:', playerName, 'and settings:', { maxRounds });
+    console.log('🚀 Starting game creation process...');
+    console.log('Player name:', playerName, 'Settings:', { maxRounds });
+    
     setIsCreating(true);
     
-    // Ensure socket is connected before emitting
+    // Ensure socket is connected
     const socket = socketManager.connect();
-    console.log('Socket connected:', socket.connected);
+    console.log('Socket status:', {
+      exists: !!socket,
+      connected: socket.connected,
+      id: socket.id
+    });
+    
+    if (!socket.connected) {
+      console.error('❌ Socket not connected, waiting for connection...');
+      socket.on('connect', () => {
+        console.log('🔌 Socket connected, retrying game creation');
+        socketManager.emit('createGame', { 
+          playerName: playerName.trim(),
+          settings: { maxRounds }
+        });
+      });
+      return;
+    }
     
     socketManager.emit('createGame', { 
       playerName: playerName.trim(),
       settings: { maxRounds }
     });
-    console.log('Emitted createGame event');
+    console.log('✅ Create game event sent');
+    
+    // Add timeout to prevent hanging
+    setTimeout(() => {
+      if (isCreating) {
+        console.error('⏰ Game creation timeout');
+        setIsCreating(false);
+        alert('Game creation timed out. Please try again.');
+      }
+    }, 10000); // 10 second timeout
   };
 
   const joinGame = () => {

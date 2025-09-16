@@ -77,6 +77,13 @@ export class GameManager {
 
     this.games.set(gameId, game);
     this.playerToGame.set(playerId, gameId);
+    
+    console.log('✅ Game created successfully:', {
+      gameId,
+      playerId,
+      playerName,
+      totalRounds: settings.maxRounds
+    });
 
     return gameId;
   }
@@ -399,6 +406,10 @@ export class GameManager {
 
   private generatePlayerId(): string {
     return Math.random().toString(36).substr(2, 9);
+  }
+
+  getGameById(gameId: string): Game | undefined {
+    return this.games.get(gameId);
   }
 
   handleDisconnect(socketId: string): void {

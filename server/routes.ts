@@ -19,16 +19,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   io.on('connection', (socket) => {
     console.log('Player connected:', socket.id);
+    
+    // Test event to verify socket communication
+    socket.emit('connectionConfirmed', { socketId: socket.id });
 
     socket.on('createGame', (data: { playerName: string; settings: { maxRounds: number } }) => {
-      console.log('Create game request:', data);
+      console.log('📋 Create game request received:', {
+        socketId: socket.id,
+        playerName: data.playerName,
+        settings: data.settings
+      });
+      
       try {
-        const gameId = gameManager.createGame(socket.id, data.playerName, data.settings);
-        console.log('Game created:', gameId);
-        socket.emit('gameCreated', { gameId, hostId: socket.id });
+        const result = gameManager.createGame(socket.id, data.playerName, data.settings);
+        console.log('✅ Game created successfully:', result);
+        
+        // Get the player ID from the game manager to send proper response
+        const gameState = gameManager.getGameById(result);
+        if (gameState) {
+          const player = Array.from(gameState.players.values())[0];
+          socket.emit('gameCreated', { 
+            gameId: result, 
+            hostId: player.id,
+            players: Array.from(gameState.players.values())
+          });
+        }
       } catch (error) {
-        console.log('Error creating game:', error);
-        socket.emit('error', 'Failed to create game');
+        console.error('❌ Error creating game:', error);
+        socket.emit('error', 'Failed to create game: ' + (error as Error).message);
       }
     });
 
