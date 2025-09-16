@@ -83,7 +83,6 @@ export const GameLobby: React.FC = () => {
       socket.off('gameStarted');
       socket.off('playerLeft');
       socket.off('error');
-      // Cleanup handled by useEffect
     };
   }, [playerId, playerName, setPlayerId, setStorePlayerName, setIsHost, setGameState]);
 
