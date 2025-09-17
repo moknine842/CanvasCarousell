@@ -108,13 +108,21 @@ function App() {
         }
 
         return (
-          <div className="min-h-screen bg-gradient-to-br from-yellow-400 to-orange-500 p-4">
-            <div className="max-w-4xl mx-auto">
-              <div className="grid lg:grid-cols-4 gap-6">
-                <div className="lg:col-span-3">
+          <div className="min-h-screen bg-gradient-to-br from-yellow-400 to-orange-500">
+            <div className="flex flex-col h-screen">
+              {/* Mobile-optimized header */}
+              <div className="text-center py-1 px-2 md:py-4 md:px-4 flex-shrink-0">
+                <h1 className="text-xl md:text-3xl font-bold text-white mb-0 md:mb-1">Guessing Phase!</h1>
+                <p className="text-xs md:text-base text-white/80">Look at the drawing and guess what it is</p>
+              </div>
+              
+              <div className="flex-1 flex flex-col md:flex-row md:max-w-4xl md:mx-auto md:gap-6 md:px-4 overflow-hidden p-2 md:p-4">
+                {/* Main content area */}
+                <div className="flex-1 md:flex-[3] overflow-auto">
                   <GuessingPhase drawing={drawingToGuess} />
                 </div>
-                <div className="lg:col-span-1">
+                {/* Leaderboard - hidden on mobile during guessing, shown on desktop */}
+                <div className="hidden md:block md:flex-[1]">
                   <Leaderboard />
                 </div>
               </div>
