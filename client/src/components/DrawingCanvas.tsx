@@ -20,6 +20,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const isMobile = useIsMobile();
+  const [lastPosition, setLastPosition] = useState({ x: 0, y: 0 });
   const [tools, setTools] = useState<DrawingTools>({
     color: '#000000',
     brushSize: isMobile ? 8 : 5,
@@ -94,9 +95,13 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     let clientX, clientY;
     
     if ('touches' in e && e.touches.length > 0) {
-      // Touch event
+      // Touch event - use the first touch point
       clientX = e.touches[0].clientX;
       clientY = e.touches[0].clientY;
+    } else if ('changedTouches' in e && e.changedTouches.length > 0) {
+      // Handle touch end events
+      clientX = e.changedTouches[0].clientX;
+      clientY = e.changedTouches[0].clientY;
     } else if ('clientX' in e) {
       // Mouse or pointer event
       clientX = e.clientX;
@@ -105,16 +110,25 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       return { x: 0, y: 0 };
     }
     
-    // Return CSS-space coordinates since the context is already scaled by devicePixelRatio
+    // Calculate scale factor to handle any CSS scaling
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    // Return coordinates scaled to canvas dimensions
     return {
-      x: clientX - rect.left,
-      y: clientY - rect.top
+      x: (clientX - rect.left) * (rect.width / canvas.offsetWidth),
+      y: (clientY - rect.top) * (rect.height / canvas.offsetHeight)
     };
   };
 
   const startDrawing = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
     if (readonly) return;
-    e.preventDefault();
+    
+    // Prevent default behavior for touch events to avoid scrolling/zooming
+    if ('touches' in e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -125,6 +139,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     setIsDrawing(true);
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
+    
+    // Store the last position for smoother lines
+    setLastPosition({ x: pos.x, y: pos.y });
   };
 
   const stopDrawing = () => {
@@ -141,7 +158,12 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
   const draw = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
     if (!isDrawing || readonly) return;
-    e.preventDefault();
+    
+    // Prevent default for touch to avoid scrolling
+    if ('touches' in e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
 
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
@@ -152,11 +174,16 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     ctx.globalCompositeOperation = tools.tool === 'eraser' ? 'destination-out' : 'source-over';
     ctx.strokeStyle = tools.color;
     ctx.lineWidth = tools.brushSize;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
 
+    // Draw smooth lines between points for better mobile experience
+    ctx.beginPath();
+    ctx.moveTo(lastPosition.x, lastPosition.y);
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
+    
+    setLastPosition({ x: pos.x, y: pos.y });
   };
 
   const clearCanvas = () => {
@@ -212,7 +239,12 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             maxWidth: '100%',
             height: isMobile ? 'calc(50vh)' : '600px',
             maxHeight: isMobile ? '50vh' : '80vh',
-            aspectRatio: '4/3'
+            aspectRatio: '4/3',
+            touchAction: 'none', // Prevent default touch behaviors
+            userSelect: 'none', // Prevent text selection
+            WebkitUserSelect: 'none', // Safari
+            MozUserSelect: 'none', // Firefox
+            msUserSelect: 'none' // Edge
           }}
         />
 
