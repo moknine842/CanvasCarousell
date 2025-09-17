@@ -99,6 +99,43 @@ export const translations = {
       settingUpGame: 'Setting up the game...',
       word: 'Word:',
       error: 'Error: '
+    },
+
+    // Drawing words
+    words: {
+      // Animals
+      'cat': 'cat',
+      'dog': 'dog',
+      'fish': 'fish',
+      'bird': 'bird',
+      'elephant': 'elephant',
+      'lion': 'lion',
+      'horse': 'horse',
+      'cow': 'cow',
+      'pig': 'pig',
+      'rabbit': 'rabbit',
+      // Food
+      'pizza': 'pizza',
+      'apple': 'apple',
+      'banana': 'banana',
+      'cake': 'cake',
+      'bread': 'bread',
+      'cheese': 'cheese',
+      'ice cream': 'ice cream',
+      // Objects
+      'car': 'car',
+      'house': 'house',
+      'tree': 'tree',
+      'flower': 'flower',
+      'book': 'book',
+      'chair': 'chair',
+      'table': 'table',
+      // Simple concepts
+      'sun': 'sun',
+      'moon': 'moon',
+      'star': 'star',
+      'happy': 'happy',
+      'sad': 'sad'
     }
   },
   
@@ -194,6 +231,43 @@ export const translations = {
       settingUpGame: 'Configuration de la partie...',
       word: 'Mot :',
       error: 'Erreur : '
+    },
+
+    // Drawing words in French
+    words: {
+      // Animals
+      'cat': 'chat',
+      'dog': 'chien',
+      'fish': 'poisson',
+      'bird': 'oiseau',
+      'elephant': 'éléphant',
+      'lion': 'lion',
+      'horse': 'cheval',
+      'cow': 'vache',
+      'pig': 'cochon',
+      'rabbit': 'lapin',
+      // Food
+      'pizza': 'pizza',
+      'apple': 'pomme',
+      'banana': 'banane',
+      'cake': 'gâteau',
+      'bread': 'pain',
+      'cheese': 'fromage',
+      'ice cream': 'glace',
+      // Objects
+      'car': 'voiture',
+      'house': 'maison',
+      'tree': 'arbre',
+      'flower': 'fleur',
+      'book': 'livre',
+      'chair': 'chaise',
+      'table': 'table',
+      // Simple concepts
+      'sun': 'soleil',
+      'moon': 'lune',
+      'star': 'étoile',
+      'happy': 'heureux',
+      'sad': 'triste'
     }
   },
   
@@ -289,6 +363,43 @@ export const translations = {
       settingUpGame: 'Configurando el juego...',
       word: 'Palabra:',
       error: 'Error: '
+    },
+
+    // Drawing words in Spanish
+    words: {
+      // Animals
+      'cat': 'gato',
+      'dog': 'perro', 
+      'fish': 'pez',
+      'bird': 'pájaro',
+      'elephant': 'elefante',
+      'lion': 'león',
+      'horse': 'caballo',
+      'cow': 'vaca',
+      'pig': 'cerdo',
+      'rabbit': 'conejo',
+      // Food
+      'pizza': 'pizza',
+      'apple': 'manzana',
+      'banana': 'banana',
+      'cake': 'pastel',
+      'bread': 'pan',
+      'cheese': 'queso',
+      'ice cream': 'helado',
+      // Objects  
+      'car': 'coche',
+      'house': 'casa',
+      'tree': 'árbol',
+      'flower': 'flor',
+      'book': 'libro',
+      'chair': 'silla',
+      'table': 'mesa',
+      // Simple concepts
+      'sun': 'sol',
+      'moon': 'luna',
+      'star': 'estrella',
+      'happy': 'feliz',
+      'sad': 'triste'
     }
   },
   

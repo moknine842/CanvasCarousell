@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { socketManager } from '../lib/socket';
 import { DrawingTools } from '../types/game';
 import { useIsMobile } from '../hooks/use-is-mobile';
+import { translateWord } from '../lib/i18n/index';
 import { Palette, Eraser, RotateCcw, Download } from 'lucide-react';
 
 interface DrawingCanvasProps {
@@ -198,9 +199,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, rect.width, rect.height);
     
-    if (onDrawingComplete) {
-      onDrawingComplete(canvas.toDataURL());
-    }
+    // Don't auto-submit when clearing canvas
   };
 
   const downloadCanvas = () => {
@@ -218,7 +217,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       {word && (
         <div className="bg-blue-100 rounded-lg p-4 text-center">
           <h3 className="text-lg font-semibold text-blue-800">Your word:</h3>
-          <p className="text-2xl font-bold text-blue-900">{word}</p>
+          <p className="text-2xl font-bold text-blue-900">{translateWord(word)}</p>
         </div>
       )}
 

@@ -8,7 +8,7 @@ interface LanguageSelectorProps {
 }
 
 export const LanguageSelector: React.FC<LanguageSelectorProps> = ({ 
-  className = "absolute top-4 right-4 z-50" 
+  className = "absolute top-4 left-4 z-50" 
 }) => {
   const { language, setLanguage } = useTranslation();
 

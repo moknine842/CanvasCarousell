@@ -54,3 +54,13 @@ export const t = (key: string, params?: Record<string, string | number>): string
     return params[param]?.toString() || match;
   });
 };
+
+export const translateWord = (word: string): string => {
+  const langTranslations = translations[currentLanguage];
+  const wordTranslations = (langTranslations as any)?.words;
+  if (wordTranslations && wordTranslations[word]) {
+    return wordTranslations[word];
+  }
+  // Fallback to original English word if no translation available
+  return word;
+};
