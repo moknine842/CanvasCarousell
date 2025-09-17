@@ -31,6 +31,7 @@ interface Game {
   timer?: NodeJS.Timeout;
   guessSubmissions?: Set<string>; // Track which players have submitted guesses
   usedWords: Map<string, Set<string>>; // Track words used by each player to prevent repeats
+  currentDrawingAssignments?: Map<string, DrawingData>; // Track which drawing each player is guessing
   settings: {
     maxRounds: number;
     drawingTime: number;
@@ -280,34 +281,74 @@ export class GameManager {
     const playerIds = Array.from(game.players.keys());
     const drawings = Array.from(game.drawings.values());
     
-    // Create rotation mapping (each player gets next player's drawing)
+    if (playerIds.length < 2) {
+      console.warn('Cannot rotate drawings with less than 2 players');
+      return;
+    }
+    
+    // Create a new map to store the rotated drawing assignments
+    const rotatedDrawings = new Map<string, DrawingData>();
+    
+    // Each player receives the next player's drawing (circular rotation)
     for (let i = 0; i < playerIds.length; i++) {
       const currentPlayerId = playerIds[i];
-      const nextIndex = (i + 1) % playerIds.length;
-      const drawingToReceive = drawings.find(d => d.playerId === playerIds[nextIndex]);
+      const nextPlayerIndex = (i + 1) % playerIds.length;
+      const nextPlayerId = playerIds[nextPlayerIndex];
       
-      if (drawingToReceive) {
-        // This is a simplified rotation - in a full implementation,
-        // you'd want to track which drawing each player is currently working on
-        console.log(`Player ${currentPlayerId} receives drawing from ${drawingToReceive.playerId}`);
+      // Find the drawing created by the next player
+      const drawingToReceive = drawings.find(d => d.playerId === nextPlayerId);
+      
+      if (drawingToReceive && !drawingToReceive.completed) {
+        // Assign this drawing to the current player for guessing
+        // We keep the original drawing data but mark who's guessing it
+        const rotatedDrawing: DrawingData = {
+          ...drawingToReceive,
+          currentGuess: '', // Reset any previous guess
+          guessedBy: undefined, // Reset guessed by
+          completed: false // Reset completion status
+        };
+        
+        rotatedDrawings.set(currentPlayerId, rotatedDrawing);
+        console.log(`🔄 Player ${game.players.get(currentPlayerId)?.name} will guess drawing by ${game.players.get(nextPlayerId)?.name} (word: ${drawingToReceive.originalWord})`);
       }
     }
+    
+    // Update the game state with rotated drawing assignments
+    // We'll use a new field to track which drawing each player is guessing
+    if (!game.currentDrawingAssignments) {
+      (game as any).currentDrawingAssignments = new Map();
+    }
+    (game as any).currentDrawingAssignments = rotatedDrawings;
   }
 
   private endGuessingRound(game: Game): void {
     // Guard against race conditions (timer + guess submission)
-    if (game.phase !== 'guessing') return;
+    if (game.phase !== 'guessing') {
+      console.log(`⚠️ Attempted to end guessing round but game phase is ${game.phase}`);
+      return;
+    }
     
+    console.log(`🔚 Ending guessing round for game ${game.id}, round ${game.currentRound}/${game.totalRounds}`);
     this.clearTimer(game);
+    
+    // Clear drawing assignments for next round
+    if ((game as any).currentDrawingAssignments) {
+      (game as any).currentDrawingAssignments.clear();
+    }
     
     // Check if we have more rounds
     if (game.currentRound < game.totalRounds) {
       game.phase = 'results';
-      game.timeRemaining = 5;
+      game.timeRemaining = 3; // Shorter results display time
       
+      console.log(`📊 Showing results for 3 seconds before round ${game.currentRound + 1}`);
       this.broadcastGameState(game);
-      this.startTimer(game, () => this.startDrawingRound(game));
+      this.startTimer(game, () => {
+        console.log(`▶️ Starting next drawing round: ${game.currentRound + 1}/${game.totalRounds}`);
+        this.startDrawingRound(game);
+      });
     } else {
+      console.log(`🏁 Game ${game.id} finished after ${game.currentRound} rounds`);
       this.endGame(game);
     }
   }
@@ -366,22 +407,32 @@ export class GameManager {
       drawing.completed = true;
       drawing.guessedBy = playerId;
       
-      // Award point
-      const player = game.players.get(playerId);
-      if (player) {
-        player.score++;
+      // Award point to the guesser
+      const guesser = game.players.get(playerId);
+      if (guesser) {
+        guesser.score++;
       }
+      
+      console.log(`✅ ${game.players.get(playerId)?.name} correctly guessed "${drawing.originalWord}"`);
     }
 
     this.broadcastGameState(game);
 
-    // Check if all players have submitted guesses OR all drawings are completed
-    const allPlayersSubmitted = game.guessSubmissions.size >= game.players.size;
-    const allCompleted = Array.from(game.drawings.values()).every(d => d.completed);
-    
-    if (allPlayersSubmitted || allCompleted) {
-      console.log(`Ending guessing round early: allPlayersSubmitted=${allPlayersSubmitted}, allCompleted=${allCompleted}`);
-      this.endGuessingRound(game);
+    // Add race condition protection - only check for early termination if still in guessing phase
+    if (game.phase === 'guessing') {
+      // Check if all players have submitted guesses OR all drawings are completed
+      const allPlayersSubmitted = game.guessSubmissions.size >= game.players.size;
+      const allCompleted = Array.from(game.drawings.values()).every(d => d.completed);
+      
+      if (allPlayersSubmitted || allCompleted) {
+        console.log(`🏃‍♀️ Ending guessing round early: allPlayersSubmitted=${allPlayersSubmitted}, allCompleted=${allCompleted}`);
+        // Add small delay to prevent race conditions with timer
+        setTimeout(() => {
+          if (game.phase === 'guessing') { // Double-check phase hasn't changed
+            this.endGuessingRound(game);
+          }
+        }, 100);
+      }
     }
   }
 
@@ -434,6 +485,8 @@ export class GameManager {
       timeRemaining: game.timeRemaining,
       drawings: Array.from(game.drawings.values()),
       currentWords: Object.fromEntries(game.currentWords),
+      currentDrawingAssignments: (game as any).currentDrawingAssignments ? 
+        Object.fromEntries((game as any).currentDrawingAssignments) : {},
       hostId: game.hostId,
       settings: game.settings
     };
