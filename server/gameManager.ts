@@ -29,6 +29,7 @@ interface Game {
   currentWords: Map<string, string>;
   hostId: string;
   timer?: NodeJS.Timeout;
+  guessSubmissions?: Set<string>; // Track which players have submitted guesses
 }
 
 export class GameManager {
@@ -208,7 +209,8 @@ export class GameManager {
   private endDrawingRound(game: Game): void {
     this.clearTimer(game);
     game.phase = 'guessing';
-    game.timeRemaining = 60;
+    game.timeRemaining = 30; // Changed from 60 to 30 seconds
+    game.guessSubmissions = new Set(); // Initialize guess tracking
 
     // Rotate drawings between players
     this.rotateDrawings(game);
@@ -236,6 +238,9 @@ export class GameManager {
   }
 
   private endGuessingRound(game: Game): void {
+    // Guard against race conditions (timer + guess submission)
+    if (game.phase !== 'guessing') return;
+    
     this.clearTimer(game);
     
     // Check if we have more rounds
@@ -292,6 +297,12 @@ export class GameManager {
     const drawing = game.drawings.get(drawingId);
     if (!drawing || drawing.completed) return;
 
+    // Track that this player has submitted a guess
+    if (!game.guessSubmissions) {
+      game.guessSubmissions = new Set();
+    }
+    game.guessSubmissions.add(playerId);
+
     const isCorrect = guess.toLowerCase().trim() === drawing.originalWord.toLowerCase();
     
     if (isCorrect) {
@@ -303,13 +314,16 @@ export class GameManager {
       if (player) {
         player.score++;
       }
-
-      this.broadcastGameState(game);
     }
 
-    // Check if all drawings are completed
+    this.broadcastGameState(game);
+
+    // Check if all players have submitted guesses OR all drawings are completed
+    const allPlayersSubmitted = game.guessSubmissions.size >= game.players.size;
     const allCompleted = Array.from(game.drawings.values()).every(d => d.completed);
-    if (allCompleted) {
+    
+    if (allPlayersSubmitted || allCompleted) {
+      console.log(`Ending guessing round early: allPlayersSubmitted=${allPlayersSubmitted}, allCompleted=${allCompleted}`);
       this.endGuessingRound(game);
     }
   }
