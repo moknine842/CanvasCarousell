@@ -1,5 +1,5 @@
 import { Server as SocketServer } from 'socket.io';
-import { getRandomWords } from './wordList';
+import { getRandomWords, wordList } from './wordList';
 
 interface Player {
   id: string;
@@ -205,8 +205,7 @@ export class GameManager {
       // Get the set of words this player has already used
       const playerUsedWords = game.usedWords.get(playerId) || new Set();
       
-      // Import the full word list
-      const { wordList } = require('./wordList');
+      // Use the imported word list
       
       // Create available word list: full word list minus player's used words minus already assigned this round
       let availableWords = wordList.filter((word: string) => 
