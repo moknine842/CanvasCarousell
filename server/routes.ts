@@ -23,7 +23,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Test event to verify socket communication
     socket.emit('connectionConfirmed', { socketId: socket.id });
 
-    socket.on('createGame', (data: { playerName: string; settings: { maxRounds: number } }) => {
+    socket.on('createGame', (data: { playerName: string; settings: { maxRounds: number; drawingTime: number; guessingTime: number } }) => {
       console.log('📋 Create game request received:', {
         socketId: socket.id,
         playerName: data.playerName,
@@ -41,7 +41,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           socket.emit('gameCreated', { 
             gameId: result, 
             hostId: player.id,
-            players: Array.from(gameState.players.values())
+            players: Array.from(gameState.players.values()),
+            settings: gameState.settings
           });
         }
       } catch (error) {
@@ -54,7 +55,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const playerId = gameManager.joinGame(data.gameId, socket.id, data.playerName);
         if (playerId) {
-          socket.emit('playerJoined', { playerId });
+          // Get the updated game state to include settings
+          const gameState = gameManager.getGameById(data.gameId);
+          if (gameState) {
+            socket.emit('playerJoined', { 
+              playerId,
+              gameId: data.gameId,
+              players: Array.from(gameState.players.values()),
+              settings: gameState.settings,
+              hostId: gameState.hostId
+            });
+          } else {
+            socket.emit('playerJoined', { playerId });
+          }
         } else {
           socket.emit('error', 'Game not found or full');
         }

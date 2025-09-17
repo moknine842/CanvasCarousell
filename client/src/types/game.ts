@@ -24,6 +24,11 @@ export interface GameState {
   drawings: DrawingData[];
   currentWords: { [playerId: string]: string };
   hostId: string;
+  settings?: {
+    maxRounds: number;
+    drawingTime: number;
+    guessingTime: number;
+  };
 }
 
 export interface DrawingTools {

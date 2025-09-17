@@ -10,6 +10,8 @@ export const GameLobby: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [maxRounds, setMaxRounds] = useState(3);
+  const [drawingTime, setDrawingTime] = useState(30);
+  const [guessingTime, setGuessingTime] = useState(30);
   
   const {
     playerId,
@@ -17,6 +19,7 @@ export const GameLobby: React.FC = () => {
     isHost,
     phase,
     id: gameStateId,
+    settings: gameSettings,
     setPlayerId,
     setPlayerName: setStorePlayerName,
     setIsHost,
@@ -31,7 +34,7 @@ export const GameLobby: React.FC = () => {
       console.log('✅ Connection confirmed by server:', data.socketId);
     });
 
-    socket.on('playerJoined', (data: { playerId: string; players: any[]; gameId?: string }) => {
+    socket.on('playerJoined', (data: { playerId: string; players: any[]; gameId?: string; settings?: any; hostId?: string }) => {
       console.log('👤 Player joined:', data);
       if (!playerId) {
         setPlayerId(data.playerId);
@@ -40,11 +43,13 @@ export const GameLobby: React.FC = () => {
       setGameState({ 
         players: data.players,
         id: data.gameId || gameId,
-        phase: 'lobby'
+        phase: 'lobby',
+        settings: data.settings,
+        hostId: data.hostId
       });
     });
 
-    socket.on('gameCreated', (data: { gameId: string; hostId: string; players: any[] }) => {
+    socket.on('gameCreated', (data: { gameId: string; hostId: string; players: any[]; settings?: any }) => {
       console.log('🎮 Game created response:', data);
       setIsCreating(false);
       
@@ -60,11 +65,17 @@ export const GameLobby: React.FC = () => {
         id: data.gameId,
         hostId: data.hostId,
         players: data.players || [],
-        phase: 'lobby'
+        phase: 'lobby',
+        settings: data.settings
       });
     });
 
     socket.on('gameStarted', (gameState: any) => {
+      setGameState(gameState);
+    });
+
+    socket.on('gameStateUpdate', (gameState: any) => {
+      console.log('🔄 Game state update received:', gameState);
       setGameState(gameState);
     });
 
@@ -86,6 +97,7 @@ export const GameLobby: React.FC = () => {
       socket.off('playerJoined');
       socket.off('gameCreated');
       socket.off('gameStarted');
+      socket.off('gameStateUpdate');
       socket.off('playerLeft');
       socket.off('error');
     };
@@ -98,7 +110,7 @@ export const GameLobby: React.FC = () => {
     }
 
     console.log('🚀 Starting game creation process...');
-    console.log('Player name:', playerName, 'Settings:', { maxRounds });
+    console.log('Player name:', playerName, 'Settings:', { maxRounds, drawingTime, guessingTime });
     
     setIsCreating(true);
     
@@ -116,7 +128,7 @@ export const GameLobby: React.FC = () => {
         console.log('🔌 Socket connected, retrying game creation');
         socketManager.emit('createGame', { 
           playerName: playerName.trim(),
-          settings: { maxRounds }
+          settings: { maxRounds, drawingTime, guessingTime }
         });
       });
       return;
@@ -124,7 +136,7 @@ export const GameLobby: React.FC = () => {
     
     socketManager.emit('createGame', { 
       playerName: playerName.trim(),
-      settings: { maxRounds }
+      settings: { maxRounds, drawingTime, guessingTime }
     });
     console.log('✅ Create game event sent');
     
@@ -221,18 +233,48 @@ export const GameLobby: React.FC = () => {
             </div>
 
             {showSettings && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Number of Rounds: {maxRounds}
-                </label>
-                <input
-                  type="range"
-                  min="2"
-                  max="5"
-                  value={maxRounds}
-                  onChange={(e) => setMaxRounds(parseInt(e.target.value))}
-                  className="w-full"
-                />
+              <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Number of Rounds: {maxRounds}
+                  </label>
+                  <input
+                    type="range"
+                    min="2"
+                    max="5"
+                    value={maxRounds}
+                    onChange={(e) => setMaxRounds(parseInt(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Drawing Time: {drawingTime}s
+                  </label>
+                  <input
+                    type="range"
+                    min="15"
+                    max="120"
+                    step="5"
+                    value={drawingTime}
+                    onChange={(e) => setDrawingTime(parseInt(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Guessing Time: {guessingTime}s
+                  </label>
+                  <input
+                    type="range"
+                    min="15"
+                    max="90"
+                    step="5"
+                    value={guessingTime}
+                    onChange={(e) => setGuessingTime(parseInt(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
               </div>
             )}
 
@@ -274,6 +316,11 @@ export const GameLobby: React.FC = () => {
 
   const readyPlayers = players ? players.filter(p => p.isReady).length : 0;
   const currentPlayer = players ? players.find(p => p.id === playerId) : null;
+  
+  // Use game state settings when available, fallback to local state
+  const displayMaxRounds = gameSettings?.maxRounds ?? maxRounds;
+  const displayDrawingTime = gameSettings?.drawingTime ?? drawingTime;
+  const displayGuessingTime = gameSettings?.guessingTime ?? guessingTime;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 p-4">
@@ -347,7 +394,15 @@ export const GameLobby: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Rounds:</span>
-                    <span className="font-medium">{maxRounds}</span>
+                    <span className="font-medium">{displayMaxRounds}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Drawing Time:</span>
+                    <span className="font-medium">{displayDrawingTime}s</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Guessing Time:</span>
+                    <span className="font-medium">{displayGuessingTime}s</span>
                   </div>
                 </div>
               </div>
@@ -392,7 +447,7 @@ export const GameLobby: React.FC = () => {
             <h3 className="text-xl font-bold text-blue-800 mb-4">How to Play</h3>
             <div className="grid md:grid-cols-2 gap-4 text-sm text-blue-700">
               <div>
-                <p className="font-semibold mb-2">1. Drawing Phase (30s)</p>
+                <p className="font-semibold mb-2">1. Drawing Phase ({displayDrawingTime}s)</p>
                 <p>Each player gets a secret word and draws it on the canvas.</p>
               </div>
               <div>
@@ -400,7 +455,7 @@ export const GameLobby: React.FC = () => {
                 <p>Drawings rotate to the next player in the circle.</p>
               </div>
               <div>
-                <p className="font-semibold mb-2">3. Guessing Phase</p>
+                <p className="font-semibold mb-2">3. Guessing Phase ({displayGuessingTime}s)</p>
                 <p>Try to guess what the drawing represents, or continue drawing it.</p>
               </div>
               <div>

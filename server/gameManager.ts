@@ -30,6 +30,11 @@ interface Game {
   hostId: string;
   timer?: NodeJS.Timeout;
   guessSubmissions?: Set<string>; // Track which players have submitted guesses
+  settings: {
+    maxRounds: number;
+    drawingTime: number;
+    guessingTime: number;
+  };
 }
 
 export class GameManager {
@@ -50,8 +55,15 @@ export class GameManager {
     return result;
   }
 
-  createGame(hostSocketId: string, playerName: string, settings: { maxRounds: number }): string {
-    console.log('Creating game for player:', playerName, 'with settings:', settings);
+  createGame(hostSocketId: string, playerName: string, settings: { maxRounds: number; drawingTime?: number; guessingTime?: number }): string {
+    // Validate and set defaults for settings
+    const validatedSettings = {
+      maxRounds: Math.max(2, Math.min(5, settings.maxRounds || 3)),
+      drawingTime: Math.max(15, Math.min(120, settings.drawingTime || 30)),
+      guessingTime: Math.max(15, Math.min(90, settings.guessingTime || 30))
+    };
+    
+    console.log('Creating game for player:', playerName, 'with settings:', validatedSettings);
     const gameId = this.generateGameId();
     const playerId = this.generatePlayerId();
     const hostId = playerId;
@@ -69,11 +81,12 @@ export class GameManager {
       players: new Map([[playerId, player]]),
       phase: 'lobby',
       currentRound: 0,
-      totalRounds: settings.maxRounds,
+      totalRounds: validatedSettings.maxRounds,
       timeRemaining: 0,
       drawings: new Map(),
       currentWords: new Map(),
-      hostId
+      hostId,
+      settings: validatedSettings
     };
 
     this.games.set(gameId, game);
@@ -108,10 +121,8 @@ export class GameManager {
     game.players.set(playerId, player);
     this.playerToGame.set(playerId, gameId);
 
-    this.broadcastToGame(gameId, 'playerJoined', {
-      playerId,
-      players: Array.from(game.players.values())
-    });
+    // Broadcast full game state to ensure all players get settings
+    this.broadcastGameState(game);
 
     return playerId;
   }
@@ -184,7 +195,7 @@ export class GameManager {
   private startDrawingRound(game: Game): void {
     game.phase = 'drawing';
     game.currentRound++;
-    game.timeRemaining = 30;
+    game.timeRemaining = game.settings.drawingTime;
     game.drawings.clear();
     game.currentWords.clear();
 
@@ -209,7 +220,7 @@ export class GameManager {
   private endDrawingRound(game: Game): void {
     this.clearTimer(game);
     game.phase = 'guessing';
-    game.timeRemaining = 30; // Changed from 60 to 30 seconds
+    game.timeRemaining = game.settings.guessingTime;
     game.guessSubmissions = new Set(); // Initialize guess tracking
 
     // Rotate drawings between players
@@ -377,7 +388,8 @@ export class GameManager {
       timeRemaining: game.timeRemaining,
       drawings: Array.from(game.drawings.values()),
       currentWords: Object.fromEntries(game.currentWords),
-      hostId: game.hostId
+      hostId: game.hostId,
+      settings: game.settings
     };
 
     this.broadcastToGame(game.id, 'gameStateUpdate', gameState);
