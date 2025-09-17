@@ -66,16 +66,16 @@ function App() {
         const playerWord = playerId ? currentWords[playerId] : undefined;
         return (
           <div className="min-h-screen bg-gradient-to-br from-green-400 to-blue-500">
-            <div className="flex flex-col h-screen">
+            <div className="flex flex-col h-screen overflow-hidden">
               {/* Mobile-optimized header */}
-              <div className="text-center py-2 px-4 md:py-6">
-                <h1 className="text-2xl md:text-4xl font-bold text-white mb-1 md:mb-2">Drawing Time!</h1>
-                <p className="text-sm md:text-base text-white/80">Draw your word in {timeRemaining} seconds</p>
+              <div className="text-center py-1 px-2 md:py-6 md:px-4 flex-shrink-0">
+                <h1 className="text-xl md:text-4xl font-bold text-white mb-0 md:mb-2">Drawing Time!</h1>
+                <p className="text-xs md:text-base text-white/80">Draw your word in {timeRemaining} seconds</p>
               </div>
               
-              <div className="flex-1 flex flex-col md:flex-row md:max-w-4xl md:mx-auto md:gap-6 md:px-4">
+              <div className="flex-1 flex flex-col md:flex-row md:max-w-4xl md:mx-auto md:gap-6 md:px-4 overflow-hidden">
                 {/* Canvas area - takes most space on mobile */}
-                <div className="flex-1 px-2 md:px-0 md:flex-[3]">
+                <div className="flex-1 px-1 md:px-0 md:flex-[3] overflow-auto">
                   <DrawingCanvas 
                     word={playerWord}
                     onDrawingComplete={handleDrawingComplete}

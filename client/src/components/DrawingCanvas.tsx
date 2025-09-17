@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { socketManager } from '../lib/socket';
 import { DrawingTools } from '../types/game';
+import { useIsMobile } from '../hooks/use-is-mobile';
 import { Palette, Eraser, RotateCcw, Download } from 'lucide-react';
 
 interface DrawingCanvasProps {
@@ -18,9 +19,10 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const isMobile = useIsMobile();
   const [tools, setTools] = useState<DrawingTools>({
     color: '#000000',
-    brushSize: 5,
+    brushSize: isMobile ? 8 : 5,
     tool: 'brush'
   });
 
@@ -205,19 +207,25 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           onTouchEnd={stopDrawing}
           onTouchMove={draw}
           onTouchCancel={stopDrawing}
-          style={{ width: '800px', maxWidth: '100%', height: '600px', maxHeight: '80vh', aspectRatio: '4/3' }}
+          style={{
+            width: isMobile ? '100%' : '800px',
+            maxWidth: '100%',
+            height: isMobile ? 'calc(50vh)' : '600px',
+            maxHeight: isMobile ? '50vh' : '80vh',
+            aspectRatio: '4/3'
+          }}
         />
 
         {!readonly && (
-          <div className="mt-4 space-y-4">
+          <div className={`mt-4 space-y-4 ${isMobile ? 'w-full' : ''}`}>
             {/* Color palette */}
-            <div className="flex items-center space-x-2">
-              <Palette className="w-5 h-5 text-gray-600" />
-              <div className="flex space-x-1">
+            <div className={`flex items-center ${isMobile ? 'justify-center flex-wrap' : 'space-x-2'}`}>
+              <Palette className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'} text-gray-600 ${isMobile ? 'mb-2 w-full' : ''}`} />
+              <div className={`flex ${isMobile ? 'flex-wrap justify-center gap-2' : 'space-x-1'}`}>
                 {colors.map(color => (
                   <button
                     key={color}
-                    className={`w-8 h-8 rounded-full border-2 ${
+                    className={`${isMobile ? 'w-10 h-10' : 'w-8 h-8'} rounded-full border-2 ${
                       tools.color === color ? 'border-gray-800' : 'border-gray-300'
                     }`}
                     style={{ backgroundColor: color }}
@@ -228,43 +236,43 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             </div>
 
             {/* Tools */}
-            <div className="flex items-center justify-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <label className="text-sm font-medium">Size:</label>
+            <div className={`flex items-center justify-center ${isMobile ? 'flex-wrap gap-2' : 'space-x-4'}`}>
+              <div className={`flex items-center ${isMobile ? 'w-full justify-center mb-2' : 'space-x-2'}`}>
+                <label className={`${isMobile ? 'text-base' : 'text-sm'} font-medium`}>Size:</label>
                 <input
                   type="range"
                   min="1"
                   max="20"
                   value={tools.brushSize}
                   onChange={(e) => setTools({ ...tools, brushSize: parseInt(e.target.value) })}
-                  className="w-20"
+                  className={`${isMobile ? 'w-32 mx-2' : 'w-20'}`}
                 />
-                <span className="text-sm w-6">{tools.brushSize}</span>
+                <span className={`${isMobile ? 'text-base w-8' : 'text-sm w-6'}`}>{tools.brushSize}</span>
               </div>
 
               <button
-                className={`px-3 py-1 rounded ${
+                className={`${isMobile ? 'px-4 py-3' : 'px-3 py-1'} rounded ${
                   tools.tool === 'eraser' 
                     ? 'bg-red-500 text-white' 
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
                 onClick={() => setTools({ ...tools, tool: tools.tool === 'eraser' ? 'brush' : 'eraser' })}
               >
-                <Eraser className="w-4 h-4" />
+                <Eraser className={`${isMobile ? 'w-6 h-6' : 'w-4 h-4'}`} />
               </button>
 
               <button
-                className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                className={`${isMobile ? 'px-4 py-3' : 'px-3 py-1'} bg-yellow-500 text-white rounded hover:bg-yellow-600`}
                 onClick={clearCanvas}
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className={`${isMobile ? 'w-6 h-6' : 'w-4 h-4'}`} />
               </button>
 
               <button
-                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                className={`${isMobile ? 'px-4 py-3' : 'px-3 py-1'} bg-green-500 text-white rounded hover:bg-green-600`}
                 onClick={downloadCanvas}
               >
-                <Download className="w-4 h-4" />
+                <Download className={`${isMobile ? 'w-6 h-6' : 'w-4 h-4'}`} />
               </button>
             </div>
           </div>
