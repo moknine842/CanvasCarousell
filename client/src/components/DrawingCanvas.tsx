@@ -37,32 +37,92 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size
-    canvas.width = 800;
-    canvas.height = 600;
-
-    // Initialize white background
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Load initial image if provided
-    if (initialImage) {
-      const img = new Image();
-      img.onload = () => {
-        ctx.drawImage(img, 0, 0);
-      };
-      img.src = initialImage;
-    }
-
-    // Set drawing properties
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+    const setupCanvas = () => {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      
+      // Set the actual size in memory (scaled for high DPI)
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      
+      // Scale the canvas back down using CSS to match display size
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+      
+      // Scale the drawing context to match device pixel ratio
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      
+      // Initialize white background
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, rect.width, rect.height);
+      
+      // Load initial image if provided
+      if (initialImage) {
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0, rect.width, rect.height);
+        };
+        img.src = initialImage;
+      }
+      
+      // Set drawing properties
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+    };
+    
+    setupCanvas();
+    
+    // Handle window resize to maintain proper canvas sizing
+    const handleResize = () => {
+      setupCanvas();
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   }, [initialImage]);
 
-  const startDrawing = (e: React.MouseEvent) => {
+  const getEventPos = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    
+    const rect = canvas.getBoundingClientRect();
+    let clientX, clientY;
+    
+    if ('touches' in e && e.touches.length > 0) {
+      // Touch event
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else if ('clientX' in e) {
+      // Mouse or pointer event
+      clientX = e.clientX;
+      clientY = e.clientY;
+    } else {
+      return { x: 0, y: 0 };
+    }
+    
+    // Return CSS-space coordinates since the context is already scaled by devicePixelRatio
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  };
+
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
     if (readonly) return;
+    e.preventDefault();
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    
+    const pos = getEventPos(e);
+    
     setIsDrawing(true);
-    draw(e);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
   };
 
   const stopDrawing = () => {
@@ -77,25 +137,24 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     }
   };
 
-  const draw = (e: React.MouseEvent) => {
+  const draw = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
     if (!isDrawing || readonly) return;
+    e.preventDefault();
 
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const pos = getEventPos(e);
 
     ctx.globalCompositeOperation = tools.tool === 'eraser' ? 'destination-out' : 'source-over';
     ctx.strokeStyle = tools.color;
     ctx.lineWidth = tools.brushSize;
 
-    ctx.lineTo(x, y);
+    ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(x, y);
+    ctx.moveTo(pos.x, pos.y);
   };
 
   const clearCanvas = () => {
@@ -104,9 +163,11 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const rect = canvas.getBoundingClientRect();
+    
+    ctx.clearRect(0, 0, rect.width, rect.height);
     ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, rect.width, rect.height);
     
     if (onDrawingComplete) {
       onDrawingComplete(canvas.toDataURL());
@@ -135,12 +196,16 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       <div className="flex flex-col items-center bg-white rounded-lg shadow-lg p-4">
         <canvas
           ref={canvasRef}
-          className="border-2 border-gray-300 rounded-lg cursor-crosshair"
+          className="border-2 border-gray-300 rounded-lg cursor-crosshair drawing-canvas"
           onMouseDown={startDrawing}
           onMouseUp={stopDrawing}
           onMouseMove={draw}
           onMouseLeave={stopDrawing}
-          style={{ maxWidth: '100%', height: 'auto' }}
+          onTouchStart={startDrawing}
+          onTouchEnd={stopDrawing}
+          onTouchMove={draw}
+          onTouchCancel={stopDrawing}
+          style={{ width: '800px', maxWidth: '100%', height: '600px', maxHeight: '80vh', aspectRatio: '4/3' }}
         />
 
         {!readonly && (

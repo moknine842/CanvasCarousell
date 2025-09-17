@@ -16,6 +16,7 @@ export const GameLobby: React.FC = () => {
     players,
     isHost,
     phase,
+    id: gameStateId,
     setPlayerId,
     setPlayerName: setStorePlayerName,
     setIsHost,
@@ -30,13 +31,17 @@ export const GameLobby: React.FC = () => {
       console.log('✅ Connection confirmed by server:', data.socketId);
     });
 
-    socket.on('playerJoined', (data: { playerId: string; players: any[] }) => {
+    socket.on('playerJoined', (data: { playerId: string; players: any[]; gameId?: string }) => {
       console.log('👤 Player joined:', data);
       if (!playerId) {
         setPlayerId(data.playerId);
         setStorePlayerName(playerName);
       }
-      setGameState({ players: data.players });
+      setGameState({ 
+        players: data.players,
+        id: data.gameId || gameId,
+        phase: 'lobby'
+      });
     });
 
     socket.on('gameCreated', (data: { gameId: string; hostId: string; players: any[] }) => {
@@ -174,7 +179,7 @@ export const GameLobby: React.FC = () => {
     setIsHost(false);
   };
 
-  if (phase !== 'lobby' || !players || players.length === 0) {
+  if (!gameStateId && (!players || players.length === 0)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
@@ -277,7 +282,7 @@ export const GameLobby: React.FC = () => {
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-gray-800 mb-2">Game Lobby</h1>
             <div className="bg-gray-100 rounded-lg px-4 py-2 inline-block">
-              <p className="text-gray-600">Game ID: <strong className="text-2xl font-mono">{gameId || 'LOADING'}</strong></p>
+              <p className="text-gray-600">Game ID: <strong className="text-2xl font-mono">{gameStateId || gameId || 'LOADING'}</strong></p>
             </div>
           </div>
 
