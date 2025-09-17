@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { socketManager } from '../lib/socket';
 import { useGameState } from '../lib/stores/useGameState';
-import { Language, languages, setLanguage, getCurrentLanguage } from '../lib/i18n/index';
-import { Users, Play, Settings, Globe } from 'lucide-react';
+import { Users, Play, Settings } from 'lucide-react';
 
 export const GameLobby: React.FC = () => {
   const [playerName, setPlayerName] = useState('');
@@ -13,13 +12,6 @@ export const GameLobby: React.FC = () => {
   const [maxRounds, setMaxRounds] = useState(3);
   const [drawingTime, setDrawingTime] = useState(30);
   const [guessingTime, setGuessingTime] = useState(30);
-  const [selectedLanguage, setSelectedLanguage] = useState<Language>('en');
-
-  // Initialize language from saved preferences on component mount
-  useEffect(() => {
-    const savedLang = getCurrentLanguage();
-    setSelectedLanguage(savedLang);
-  }, []);
   
   const {
     playerId,
@@ -282,29 +274,6 @@ export const GameLobby: React.FC = () => {
                     onChange={(e) => setGuessingTime(parseInt(e.target.value))}
                     className="w-full"
                   />
-                </div>
-                <div>
-                  <label htmlFor="language-select" className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                    <Globe className="w-4 h-4 mr-2" />
-                    Language
-                  </label>
-                  <select
-                    id="language-select"
-                    value={selectedLanguage}
-                    onChange={(e) => {
-                      const newLang = e.target.value as Language;
-                      setSelectedLanguage(newLang);
-                      // Use centralized language setting function
-                      setLanguage(newLang);
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
-                  >
-                    {Object.entries(languages).map(([code, name]) => (
-                      <option key={code} value={code}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
                 </div>
               </div>
             )}

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Language, setLanguage, getCurrentLanguage, initializeLanguage, t } from './index';
+import { Language, languages, setLanguage, getCurrentLanguage, initializeLanguage, t } from './index';
 
 interface TranslationContextType {
   language: Language;
@@ -14,12 +14,14 @@ interface TranslationProviderProps {
 }
 
 export const TranslationProvider: React.FC<TranslationProviderProps> = ({ children }) => {
-  const [language, setCurrentLanguage] = useState<Language>('en');
-
-  useEffect(() => {
-    initializeLanguage();
-    setCurrentLanguage(getCurrentLanguage());
-  }, []);
+  const [language, setCurrentLanguage] = useState<Language>(() => {
+    // Initialize language synchronously during state initialization
+    const saved = localStorage.getItem('game-language') as Language;
+    const browserLang = navigator.language.substring(0, 2) as Language;
+    const lang = saved || (Object.keys(languages).includes(browserLang) ? browserLang : 'en');
+    setLanguage(lang); // Set it in the global state too
+    return lang;
+  });
 
   const handleSetLanguage = (lang: Language) => {
     setLanguage(lang);
@@ -39,8 +41,12 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({ childr
 
 export const useTranslation = () => {
   const context = useContext(TranslationContext);
-  if (context === undefined) {
-    throw new Error('useTranslation must be used within a TranslationProvider');
-  }
-  return context;
+  if (context) return context;
+  
+  // Fallback when context is undefined (e.g., duplicate module instances)
+  return { 
+    language: getCurrentLanguage(), 
+    setLanguage, 
+    t 
+  };
 };

@@ -5,7 +5,8 @@ import { GuessingPhase } from './components/GuessingPhase';
 import { Leaderboard } from './components/Leaderboard';
 import { Timer } from './components/Timer';
 import { useGameState } from './lib/stores/useGameState';
-// import { useTranslation } from './lib/i18n/context'; // Temporarily disabled
+import { useTranslation } from './lib/i18n/context';
+import { LanguageSelector } from './components/LanguageSelector';
 import { socketManager } from './lib/socket';
 import '@fontsource/inter';
 
@@ -19,22 +20,7 @@ function App() {
     timeRemaining 
   } = useGameState();
   
-  // Temporary fix: Use fallback text for now to test the provider
-  const t = (key: string, params?: any) => {
-    // Simple fallback for testing
-    const fallbackTexts: any = {
-      'phases.drawingPhase': 'Drawing Time!',
-      'phases.drawYourWord': `Draw your word in ${params?.timeRemaining} seconds`,
-      'phases.guessingPhase': 'Guessing Phase!',
-      'phases.guessDescription': 'Look at the drawing and guess what it is',
-      'messages.waitingForResults': 'Waiting for results...',
-      'phases.allDrawingsProcessed': 'All drawings have been processed!',
-      'phases.finalResults': 'Final Results!',
-      'phases.roundComplete': 'Round Complete!',
-      'phases.getReadyNextRound': 'Get ready for the next round...'
-    };
-    return fallbackTexts[key] || key;
-  };
+  const { t } = useTranslation();
 
   useEffect(() => {
     const socket = socketManager.connect();
@@ -205,8 +191,9 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen font-sans">
+    <div className="min-h-screen font-sans relative">
       <Timer />
+      <LanguageSelector />
       {renderGameContent()}
     </div>
   );
