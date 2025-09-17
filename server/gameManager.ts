@@ -30,6 +30,7 @@ interface Game {
   hostId: string;
   timer?: NodeJS.Timeout;
   guessSubmissions?: Set<string>; // Track which players have submitted guesses
+  usedWords: Map<string, Set<string>>; // Track words used by each player to prevent repeats
   settings: {
     maxRounds: number;
     drawingTime: number;
@@ -86,6 +87,7 @@ export class GameManager {
       drawings: new Map(),
       currentWords: new Map(),
       hostId,
+      usedWords: new Map(),
       settings: validatedSettings
     };
 
@@ -192,6 +194,61 @@ export class GameManager {
     this.startDrawingRound(game);
   }
 
+  private assignWordsToPlayers(game: Game): void {
+    const playerIds = Array.from(game.players.keys());
+    const assignedThisRound = new Set<string>();
+
+    for (const playerId of playerIds) {
+      const playerName = game.players.get(playerId)?.name || playerId;
+      
+      // Get the set of words this player has already used
+      const playerUsedWords = game.usedWords.get(playerId) || new Set();
+      
+      // Import the full word list
+      const { wordList } = require('./wordList');
+      
+      // Create available word list: full word list minus player's used words minus already assigned this round
+      let availableWords = wordList.filter((word: string) => 
+        !playerUsedWords.has(word) && !assignedThisRound.has(word)
+      );
+      
+      // If no words available for this player (they've used all unique words), fallback to words not assigned this round
+      if (availableWords.length === 0) {
+        console.warn(`⚠️ Player ${playerName} has used all available unique words, falling back to round-unique words`);
+        availableWords = wordList.filter((word: string) => !assignedThisRound.has(word));
+      }
+      
+      // Final fallback - should only happen if we have more players than words (impossible with our word list)
+      if (availableWords.length === 0) {
+        console.error(`🚨 No available words for player ${playerName}, using random word (this should never happen)`);
+        availableWords = wordList;
+      }
+      
+      // Pick a random word from available options
+      const randomIndex = Math.floor(Math.random() * availableWords.length);
+      const assignedWord = availableWords[randomIndex];
+      
+      // Track this word as assigned this round and used by this player
+      assignedThisRound.add(assignedWord);
+      
+      if (!game.usedWords.has(playerId)) {
+        game.usedWords.set(playerId, new Set());
+      }
+      game.usedWords.get(playerId)!.add(assignedWord);
+      
+      // Assign the word and create drawing data
+      game.currentWords.set(playerId, assignedWord);
+      game.drawings.set(playerId, {
+        playerId,
+        originalWord: assignedWord,
+        imageData: '',
+        completed: false
+      });
+      
+      console.log(`🎯 Assigned "${assignedWord}" to ${playerName} (${availableWords.length} options available)`);
+    }
+  }
+
   private startDrawingRound(game: Game): void {
     game.phase = 'drawing';
     game.currentRound++;
@@ -199,19 +256,8 @@ export class GameManager {
     game.drawings.clear();
     game.currentWords.clear();
 
-    // Assign random words to each player
-    const playerIds = Array.from(game.players.keys());
-    const words = getRandomWords(playerIds.length);
-    
-    playerIds.forEach((playerId, index) => {
-      game.currentWords.set(playerId, words[index]);
-      game.drawings.set(playerId, {
-        playerId,
-        originalWord: words[index],
-        imageData: '',
-        completed: false
-      });
-    });
+    // Use improved word assignment logic
+    this.assignWordsToPlayers(game);
 
     this.broadcastGameState(game);
     this.startTimer(game, () => this.endDrawingRound(game));
