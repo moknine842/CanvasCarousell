@@ -1,9 +1,22 @@
 import React from 'react';
 import { useGameState } from '../lib/stores/useGameState';
+// import { useTranslation } from '../lib/i18n/context'; // Temporarily disabled
 import { Trophy, Medal, Award } from 'lucide-react';
 
 export const Leaderboard: React.FC = () => {
   const { players, phase, playerId } = useGameState();
+  
+  // Temporary fallback function
+  const t = (key: string) => {
+    const fallbacks: any = {
+      'game.players': 'Players',
+      'game.you': 'You',
+      'game.ready': 'Ready',
+      'game.notReady': 'Not Ready',
+      'game.leaderboard': 'Leaderboard'
+    };
+    return fallbacks[key] || key;
+  };
 
   const sortedPlayers = players ? [...players].sort((a, b) => b.score - a.score) : [];
 
@@ -28,7 +41,7 @@ export const Leaderboard: React.FC = () => {
   if (phase === 'lobby') {
     return (
       <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">Players</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">{t('game.players')}</h2>
         <div className="space-y-2">
           {players && players.map((player, index) => (
             <div
@@ -43,13 +56,13 @@ export const Leaderboard: React.FC = () => {
                 </div>
                 <span className="font-medium text-gray-800">{player.name}</span>
                 {player.id === playerId && (
-                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">You</span>
+                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">{t('game.you')}</span>
                 )}
               </div>
               <div className={`px-2 py-1 rounded-full text-xs ${
                 player.isReady ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
               }`}>
-                {player.isReady ? 'Ready' : 'Not Ready'}
+                {player.isReady ? t('game.ready') : t('game.notReady')}
               </div>
             </div>
           ))}
@@ -60,7 +73,7 @@ export const Leaderboard: React.FC = () => {
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">Leaderboard</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">{t('game.leaderboard')}</h2>
       <div className="space-y-2">
         {sortedPlayers.map((player, index) => (
           <div

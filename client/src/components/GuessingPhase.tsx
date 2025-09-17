@@ -3,6 +3,7 @@ import { DrawingCanvas } from './DrawingCanvas';
 import { Leaderboard } from './Leaderboard';
 import { socketManager } from '../lib/socket';
 import { useGameState } from '../lib/stores/useGameState';
+// import { useTranslation } from '../lib/i18n/context'; // Temporarily disabled
 import { useIsMobile } from '../hooks/use-is-mobile';
 import { DrawingData } from '../types/game';
 import { Send } from 'lucide-react';
@@ -16,6 +17,10 @@ export const GuessingPhase: React.FC<GuessingPhaseProps> = ({ drawing }) => {
   const [hasGuessed, setHasGuessed] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
   const { playerId } = useGameState();
+  
+  // Temporary fallback function
+  const t = (key: string) => key;
+  
   const isMobile = useIsMobile();
 
   const handleGuess = (e: React.FormEvent) => {

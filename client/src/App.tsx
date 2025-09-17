@@ -5,6 +5,7 @@ import { GuessingPhase } from './components/GuessingPhase';
 import { Leaderboard } from './components/Leaderboard';
 import { Timer } from './components/Timer';
 import { useGameState } from './lib/stores/useGameState';
+// import { useTranslation } from './lib/i18n/context'; // Temporarily disabled
 import { socketManager } from './lib/socket';
 import '@fontsource/inter';
 
@@ -17,6 +18,23 @@ function App() {
     setGameState, 
     timeRemaining 
   } = useGameState();
+  
+  // Temporary fix: Use fallback text for now to test the provider
+  const t = (key: string, params?: any) => {
+    // Simple fallback for testing
+    const fallbackTexts: any = {
+      'phases.drawingPhase': 'Drawing Time!',
+      'phases.drawYourWord': `Draw your word in ${params?.timeRemaining} seconds`,
+      'phases.guessingPhase': 'Guessing Phase!',
+      'phases.guessDescription': 'Look at the drawing and guess what it is',
+      'messages.waitingForResults': 'Waiting for results...',
+      'phases.allDrawingsProcessed': 'All drawings have been processed!',
+      'phases.finalResults': 'Final Results!',
+      'phases.roundComplete': 'Round Complete!',
+      'phases.getReadyNextRound': 'Get ready for the next round...'
+    };
+    return fallbackTexts[key] || key;
+  };
 
   useEffect(() => {
     const socket = socketManager.connect();
@@ -69,8 +87,8 @@ function App() {
             <div className="flex flex-col h-screen overflow-hidden">
               {/* Mobile-optimized header */}
               <div className="text-center py-1 px-2 md:py-6 md:px-4 flex-shrink-0">
-                <h1 className="text-xl md:text-4xl font-bold text-white mb-0 md:mb-2">Drawing Time!</h1>
-                <p className="text-xs md:text-base text-white/80">Draw your word in {timeRemaining} seconds</p>
+                <h1 className="text-xl md:text-4xl font-bold text-white mb-0 md:mb-2">{t('phases.drawingPhase')}</h1>
+                <p className="text-xs md:text-base text-white/80">{t('phases.drawYourWord', { timeRemaining })}</p>
               </div>
               
               <div className="flex-1 flex flex-col md:flex-row md:max-w-4xl md:mx-auto md:gap-6 md:px-4 overflow-hidden">
@@ -100,8 +118,8 @@ function App() {
           return (
             <div className="min-h-screen bg-gradient-to-br from-yellow-400 to-orange-500 p-4 flex items-center justify-center">
               <div className="bg-white rounded-2xl shadow-2xl p-8 text-center">
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">Waiting for next round...</h2>
-                <p className="text-gray-600">All drawings have been processed!</p>
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">{t('messages.waitingForResults')}</h2>
+                <p className="text-gray-600">{t('phases.allDrawingsProcessed')}</p>
               </div>
             </div>
           );
@@ -112,8 +130,8 @@ function App() {
             <div className="flex flex-col h-screen">
               {/* Mobile-optimized header */}
               <div className="text-center py-1 px-2 md:py-4 md:px-4 flex-shrink-0">
-                <h1 className="text-xl md:text-3xl font-bold text-white mb-0 md:mb-1">Guessing Phase!</h1>
-                <p className="text-xs md:text-base text-white/80">Look at the drawing and guess what it is</p>
+                <h1 className="text-xl md:text-3xl font-bold text-white mb-0 md:mb-1">{t('phases.guessingPhase')}</h1>
+                <p className="text-xs md:text-base text-white/80">{t('phases.guessDescription')}</p>
               </div>
               
               <div className="flex-1 flex flex-col md:flex-row md:max-w-4xl md:mx-auto md:gap-6 md:px-4 overflow-hidden p-2 md:p-4">
@@ -137,10 +155,10 @@ function App() {
             <div className="max-w-4xl mx-auto">
               <div className="text-center mb-8">
                 <h1 className="text-4xl font-bold text-white mb-2">
-                  {phase === 'finished' ? 'Final Results!' : 'Round Complete!'}
+                  {phase === 'finished' ? t('phases.finalResults') : t('phases.roundComplete')}
                 </h1>
                 {phase === 'results' && (
-                  <p className="text-white/80">Get ready for the next round...</p>
+                  <p className="text-white/80">{t('phases.getReadyNextRound')}</p>
                 )}
               </div>
               
